@@ -5,7 +5,12 @@
     { "path": "./tsconfig.node.json" }
   ],
   "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
     "baseUrl": ".",
+    "strict": true,
     "paths": {
       "@/*": ["src/*"]
     }
