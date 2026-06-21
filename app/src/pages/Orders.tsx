@@ -17,7 +17,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import UpdateOrderDialog from "@/components/orders/UpdateOrderDialog";
-
+import CreateOrderDialog from "@/components/orders/CreateOrderDialog";
 
 type Order = {
   id: number;
@@ -38,22 +38,64 @@ const MOCK_ORDERS: Order[] = Array.from({ length: 35 }).map((_, i) => ({
       : "completed",
 }));
 
-function handleDelete(id: number) {
-  console.log("Delete order:", id);
-}
-
 export default function Orders() {
+  const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS);
   const [page, setPage] = useState(1);
-  const pageSize = 10;
 
-  const totalPages = Math.ceil(MOCK_ORDERS.length / pageSize);
+  const pageSize = 10;
+  const totalPages = Math.max(1, Math.ceil(orders.length / pageSize));
 
   const start = (page - 1) * pageSize;
-  const data = MOCK_ORDERS.slice(start, start + pageSize);
+  const data = orders.slice(start, start + pageSize);
+
+  function handleCreate(newOrder: Order) {
+    setOrders((currentOrders) => [newOrder, ...currentOrders]);
+    setPage(1);
+  }
+
+  function handleUpdate(updatedOrder: Order) {
+    setOrders((currentOrders) =>
+      currentOrders.map((order) =>
+        order.id === updatedOrder.id ? updatedOrder : order
+      )
+    );
+  }
+
+  function handleDelete(id: number) {
+    const shouldDelete = window.confirm(
+      "Are you sure you want to delete this order?"
+    );
+
+    if (!shouldDelete) return;
+
+    setOrders((currentOrders) => {
+      const updatedOrders = currentOrders.filter(
+        (order) => order.id !== id
+      );
+
+      // If the last item on the current page was deleted,
+      // move back one page if needed.
+      const updatedTotalPages = Math.max(
+        1,
+        Math.ceil(updatedOrders.length / pageSize)
+      );
+
+      if (page > updatedTotalPages) {
+        setPage(updatedTotalPages);
+      }
+
+      return updatedOrders;
+    });
+  }
 
   return (
     <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">Orders</h1>
+      {/* Page title + Add Order button */}
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Orders</h1>
+
+        <CreateOrderDialog onCreate={handleCreate} />
+      </div>
 
       <Card>
         <CardHeader>
@@ -73,35 +115,49 @@ export default function Orders() {
             </TableHeader>
 
             <TableBody>
-              {data.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell>{order.id}</TableCell>
-                  <TableCell>{order.customer}</TableCell>
-                  <TableCell>${order.total}</TableCell>
-                  <TableCell>{order.status}</TableCell>
-                  <TableCell>
-                  <div className="flex gap-2">
-                    <UpdateOrderDialog
-                      order={order}
-                      onUpdate={(data) => console.log("Updated in table:", data)}
-                    />
-
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDelete(order.id)}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </TableCell>
+              {data.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="py-8 text-center text-muted-foreground"
+                  >
+                    No orders found.
+                  </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                data.map((order) => (
+                  <TableRow key={order.id}>
+                    <TableCell>{order.id}</TableCell>
+                    <TableCell>{order.customer}</TableCell>
+                    <TableCell>${order.total.toFixed(2)}</TableCell>
+                    <TableCell className="capitalize">
+                      {order.status}
+                    </TableCell>
+
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <UpdateOrderDialog
+                          order={order}
+                          onUpdate={handleUpdate}
+                        />
+
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(order.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
 
           {/* Pagination */}
-          <div className="flex justify-between items-center mt-4">
+          <div className="mt-4 flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
               Page {page} of {totalPages}
             </p>
@@ -110,7 +166,7 @@ export default function Orders() {
               <Button
                 variant="outline"
                 disabled={page === 1}
-                onClick={() => setPage((p) => p - 1)}
+                onClick={() => setPage((currentPage) => currentPage - 1)}
               >
                 Prev
               </Button>
@@ -118,7 +174,7 @@ export default function Orders() {
               <Button
                 variant="outline"
                 disabled={page === totalPages}
-                onClick={() => setPage((p) => p + 1)}
+                onClick={() => setPage((currentPage) => currentPage + 1)}
               >
                 Next
               </Button>

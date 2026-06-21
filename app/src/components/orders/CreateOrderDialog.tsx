@@ -12,35 +12,20 @@ import OrderForm from "./OrderForm";
 import type { Order, OrderFormData } from "@/types/order";
 
 type Props = {
-  order: Order;
-  onUpdate: (updatedOrder: Order) => void;
+  onCreate: (newOrder: Order) => void;
 };
 
-export default function UpdateOrderDialog({
-  order,
-  onUpdate,
-}: Props) {
+const emptyForm: OrderFormData = {
+  customer: "",
+  total: 0,
+  status: "pending",
+};
+
+export default function CreateOrderDialog({ onCreate }: Props) {
   const [open, setOpen] = useState(false);
+  const [form, setForm] = useState<OrderFormData>(emptyForm);
 
-  const [form, setForm] = useState<OrderFormData>({
-    customer: order.customer,
-    total: order.total,
-    status: order.status,
-  });
-
-  function handleOpenChange(nextOpen: boolean) {
-    setOpen(nextOpen);
-
-    if (nextOpen) {
-      setForm({
-        customer: order.customer,
-        total: order.total,
-        status: order.status,
-      });
-    }
-  }
-
-  function handleSave() {
+  function handleCreate() {
     if (!form.customer.trim()) {
       alert("Customer is required.");
       return;
@@ -51,36 +36,47 @@ export default function UpdateOrderDialog({
       return;
     }
 
-    onUpdate({
-      id: order.id,
+    const newOrder: Order = {
+      id: Date.now(),
       ...form,
-    });
+    };
 
+    onCreate(newOrder);
+
+    setForm(emptyForm);
     setOpen(false);
+  }
+
+  function handleOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen);
+
+    // Reset fields when Add Order is opened.
+    if (nextOpen) {
+      setForm(emptyForm);
+    }
   }
 
   return (
     <>
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => handleOpenChange(true)}
-      >
-        Update
+      <Button onClick={() => handleOpenChange(true)}>
+        Add Order
       </Button>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Update Order #{order.id}</DialogTitle>
+            <DialogTitle>Add Order</DialogTitle>
           </DialogHeader>
+
           <OrderForm form={form} onChange={setForm} />
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>
-              Save Changes
+
+            <Button onClick={handleCreate}>
+              Create Order
             </Button>
           </DialogFooter>
         </DialogContent>
