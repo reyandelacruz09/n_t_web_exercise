@@ -1,11 +1,14 @@
 import { useState } from "react";
+import { PackageSearch, Search } from "lucide-react";
+
 import {
   Card,
+  CardAction,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
 import {
   Table,
   TableBody,
@@ -14,49 +17,105 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import CreateProductDialog from "@/components/products/CreateProductDialog";
 import UpdateProductDialog from "@/components/products/UpdateProductDialog";
+import { useProducts } from "@/hooks/useProducts";
 
+function getStockBadge(stock: number) {
+  if (stock === 0) {
+    return {
+      label: "Out of stock",
+      className: "border-red-500/30 bg-red-500/10 text-red-500",
+    };
+  }
 
-type Product = {
-  id: number;
-  name: string;
-  price: number;
-  stock: number;
-};
+  if (stock < 20) {
+    return {
+      label: "Low stock",
+      className: "border-amber-500/30 bg-amber-500/10 text-amber-600",
+    };
+  }
 
-const MOCK_PRODUCTS: Product[] = Array.from({ length: 50 }).map((_, i) => ({
-  id: i + 1,
-  name: `Product ${i + 1}`,
-  price: Number((Math.random() * 200 + 10).toFixed(2)),
-  stock: Math.floor(Math.random() * 100),
-}));
+  return {
+    label: "In stock",
+    className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-600",
+  };
+}
 
 export default function Products() {
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+
+  const {
+    data: products = [],
+    isPending,
+    error,
+  } = useProducts();
+
   const pageSize = 10;
 
-  const totalPages = Math.ceil(MOCK_PRODUCTS.length / pageSize);
+  const filtered = products.filter((product) =>
+    product.name.toLowerCase().includes(search.trim().toLowerCase())
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
 
   const start = (page - 1) * pageSize;
-  const data = MOCK_PRODUCTS.slice(start, start + pageSize);
-
-  function handleEdit(id: number) {
-    console.log("Edit product:", id);
-  }
+  const data = filtered.slice(start, start + pageSize);
 
   function handleDelete(id: number) {
     console.log("Delete product:", id);
   }
 
+  function handleSearch(value: string) {
+    setSearch(value);
+    setPage(1);
+  }
+
+  if (isPending) {
+    return <div className="p-6">Loading products...</div>;
+  }
+
+  if (error instanceof Error) {
+    return (
+      <div className="p-6 text-red-500">
+        {error.message}
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">Products</h1>
+    <div className="space-y-6 p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Products</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Manage your product catalog and inventory.
+          </p>
+        </div>
+
+        <CreateProductDialog />
+      </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Product List</CardTitle>
+          <CardDescription>{filtered.length} products</CardDescription>
+
+          <CardAction>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => handleSearch(e.target.value)}
+                placeholder="Search products..."
+                className="w-56 pl-8"
+              />
+            </div>
+          </CardAction>
         </CardHeader>
 
         <CardContent>
@@ -67,42 +126,73 @@ export default function Products() {
                 <TableHead>Name</TableHead>
                 <TableHead>Price</TableHead>
                 <TableHead>Stock</TableHead>
-                <TableHead>Action</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
 
             <TableBody>
-              {data.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell>{product.id}</TableCell>
-                  <TableCell>{product.name}</TableCell>
-                  <TableCell>${product.price}</TableCell>
-                  <TableCell>{product.stock}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <UpdateProductDialog
-                        product={product}
-                        onUpdate={(data) => console.log("Updated in table:", data)}
-                      />
-
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(product.id)}
-                      >
-                        Delete
-                      </Button>
+              {data.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-12">
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <PackageSearch className="size-8" />
+                      <p>No products found.</p>
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                data.map((product) => {
+                  const badge = getStockBadge(product.stock);
+
+                  return (
+                    <TableRow key={product.id}>
+                      <TableCell className="text-muted-foreground">
+                        #{product.id}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {product.name}
+                      </TableCell>
+                      <TableCell className="tabular-nums">
+                        ${Number(product.price).toFixed(2)}
+                      </TableCell>
+                      <TableCell className="tabular-nums">
+                        {product.stock}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={badge.className}>
+                          {badge.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-end gap-2">
+                          <UpdateProductDialog product={product} />
+
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDelete(product.id)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
             </TableBody>
           </Table>
 
           {/* Pagination */}
-          <div className="flex justify-between items-center mt-4">
+          <div className="mt-4 flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Page {page} of {totalPages}
+              Showing{" "}
+              <span className="font-medium text-foreground">
+                {filtered.length === 0 ? 0 : start + 1}–
+                {Math.min(start + pageSize, filtered.length)}
+              </span>{" "}
+              of {filtered.length}
             </p>
 
             <div className="flex gap-2">
@@ -111,7 +201,7 @@ export default function Products() {
                 disabled={page === 1}
                 onClick={() => setPage((p) => p - 1)}
               >
-                Prev
+                Previous
               </Button>
 
               <Button

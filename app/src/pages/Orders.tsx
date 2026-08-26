@@ -1,187 +1,115 @@
-import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { PackageOpen } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-
-import { Button } from "@/components/ui/button";
-import UpdateOrderDialog from "@/components/orders/UpdateOrderDialog";
+  DataTable,
+  type DataTableColumn,
+} from "@/components/data-table";
 import CreateOrderDialog from "@/components/orders/CreateOrderDialog";
+import UpdateOrderDialog from "@/components/orders/UpdateOrderDialog";
+import { useOrders } from "@/hooks/userOrders";
+import { useCustomers } from "@/hooks/useCustomers";
+import type { OrderRow } from "@/services/orders";
 
-type Order = {
-  id: number;
-  customer: string;
-  total: number;
-  status: "pending" | "processing" | "completed";
+const statusClassName: Record<string, string> = {
+  Pending: "border-amber-500/30 bg-amber-500/10 text-amber-500",
+  Processing: "border-blue-500/30 bg-blue-500/10 text-blue-500",
+  Completed: "border-emerald-500/30 bg-emerald-500/10 text-emerald-500",
 };
 
-const MOCK_ORDERS: Order[] = Array.from({ length: 35 }).map((_, i) => ({
-  id: i + 1,
-  customer: `Customer ${i + 1}`,
-  total: Number((Math.random() * 500 + 50).toFixed(2)),
-  status:
-    i % 3 === 0
-      ? "pending"
-      : i % 3 === 1
-      ? "processing"
-      : "completed",
-}));
-
 export default function Orders() {
-  const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS);
-  const [page, setPage] = useState(1);
+  const {
+    data: orders = [],
+    isPending,
+    error,
+  } = useOrders();
+  const { data: customers = [] } = useCustomers();
 
-  const pageSize = 10;
-  const totalPages = Math.max(1, Math.ceil(orders.length / pageSize));
+  const customerName = (id: number) => {
+    const customer = customers.find((c) => c.id === id);
+    return customer ? `${customer.first_name} ${customer.last_name}` : null;
+  };
 
-  const start = (page - 1) * pageSize;
-  const data = orders.slice(start, start + pageSize);
+  const columns: DataTableColumn<OrderRow>[] = [
+    {
+      id: "id",
+      header: "ID",
+      cellClassName: "text-muted-foreground",
+      cell: (order) => `#${order.id}`,
+    },
+    {
+      id: "customer",
+      header: "Customer",
+      cellClassName: "font-medium",
+      cell: (order) =>
+        customerName(order.customer_id) ?? `Customer #${order.customer_id}`,
+    },
+    {
+      id: "total",
+      header: "Total",
+      cellClassName: "tabular-nums",
+      cell: (order) => `$${Number(order.total_amount).toFixed(2)}`,
+    },
+    {
+      id: "status",
+      header: "Status",
+      cell: (order) => (
+        <Badge className={statusClassName[order.status] ?? ""}>
+          {order.status}
+        </Badge>
+      ),
+    },
+    {
+      id: "date",
+      header: "Date",
+      cellClassName: "text-muted-foreground",
+      cell: (order) => new Date(order.created_at).toLocaleDateString(),
+    },
+    {
+      id: "actions",
+      header: "Action",
+      headerClassName: "text-right",
+      cellClassName: "text-right",
+      cell: (order) => <UpdateOrderDialog orderId={order.id} />,
+    },
+  ];
 
-  function handleCreate(newOrder: Order) {
-    setOrders((currentOrders) => [newOrder, ...currentOrders]);
-    setPage(1);
+  if (isPending) {
+    return <div className="p-6">Loading orders...</div>;
   }
 
-  function handleUpdate(updatedOrder: Order) {
-    setOrders((currentOrders) =>
-      currentOrders.map((order) =>
-        order.id === updatedOrder.id ? updatedOrder : order
-      )
+  if (error instanceof Error) {
+    return (
+      <div className="p-6 text-red-500">
+        {error.message}
+      </div>
     );
-  }
-
-  function handleDelete(id: number) {
-    const shouldDelete = window.confirm(
-      "Are you sure you want to delete this order?"
-    );
-
-    if (!shouldDelete) return;
-
-    setOrders((currentOrders) => {
-      const updatedOrders = currentOrders.filter(
-        (order) => order.id !== id
-      );
-
-      // If the last item on the current page was deleted,
-      // move back one page if needed.
-      const updatedTotalPages = Math.max(
-        1,
-        Math.ceil(updatedOrders.length / pageSize)
-      );
-
-      if (page > updatedTotalPages) {
-        setPage(updatedTotalPages);
-      }
-
-      return updatedOrders;
-    });
   }
 
   return (
-    <div className="p-6">
-      {/* Page title + Add Order button */}
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Orders</h1>
-
-        <CreateOrderDialog onCreate={handleCreate} />
+    <div className="space-y-6 p-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Track and manage customer orders.
+        </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Order List</CardTitle>
-        </CardHeader>
-
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Action</TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {data.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="py-8 text-center text-muted-foreground"
-                  >
-                    No orders found.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                data.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell>{order.id}</TableCell>
-                    <TableCell>{order.customer}</TableCell>
-                    <TableCell>${order.total.toFixed(2)}</TableCell>
-                    <TableCell className="capitalize">
-                      {order.status}
-                    </TableCell>
-
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <UpdateOrderDialog
-                          order={order}
-                          onUpdate={handleUpdate}
-                        />
-
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(order.id)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-
-          {/* Pagination */}
-          <div className="mt-4 flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              Page {page} of {totalPages}
-            </p>
-
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                disabled={page === 1}
-                onClick={() => setPage((currentPage) => currentPage - 1)}
-              >
-                Prev
-              </Button>
-
-              <Button
-                variant="outline"
-                disabled={page === totalPages}
-                onClick={() => setPage((currentPage) => currentPage + 1)}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <DataTable
+        data={orders}
+        columns={columns}
+        getRowKey={(order) => order.id}
+        title="Order List"
+        entityName="orders"
+        searchable
+        searchPlaceholder="Search orders..."
+        getSearchText={(order) =>
+          `${order.order_number} ${order.status}`
+        }
+        emptyIcon={PackageOpen}
+        emptyTitle="No orders found."
+        actions={<CreateOrderDialog />}
+      />
     </div>
   );
 }

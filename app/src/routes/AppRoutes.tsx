@@ -9,7 +9,7 @@ import Dashboard from "../pages/Dashboard";
 import Orders from "../pages/Orders";
 import Products from "../pages/Products";
 import Customers from "../pages/Customers";
-import Login from "../pages/Login";
+import Login from "../pages/login";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 

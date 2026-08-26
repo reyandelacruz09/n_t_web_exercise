@@ -3,77 +3,149 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-
-type Customer = {
-  id: number;
-  name: string;
-  email: string;
-};
+import { Label } from "@/components/ui/label";
+import { useUpdateCustomer } from "@/hooks/useCustomers";
+import type { Customer } from "@/services/customers";
 
 type Props = {
   customer: Customer;
-  onUpdate?: (data: Customer) => void;
 };
 
-export default function UpdateCustomerDialog({ customer, onUpdate }: Props) {
+export default function UpdateCustomerDialog({ customer }: Props) {
   const [open, setOpen] = useState(false);
-
   const [form, setForm] = useState({
-    name: customer.name,
+    first_name: customer.first_name,
+    last_name: customer.last_name,
     email: customer.email,
+    phone: customer.phone,
   });
+  const [error, setError] = useState("");
 
-  function handleSave() {
-    const updated = {
-      ...customer,
-      ...form,
-    };
+  const updateCustomer = useUpdateCustomer();
 
-    console.log("Updated Customer:", updated);
+  function handleOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen);
 
-    onUpdate?.(updated);
-    setOpen(false);
+    if (nextOpen) {
+      setForm({
+        first_name: customer.first_name,
+        last_name: customer.last_name,
+        email: customer.email,
+        phone: customer.phone,
+      });
+      setError("");
+    }
+  }
+
+  async function handleSave() {
+    if (!form.first_name.trim() || !form.last_name.trim()) {
+      setError("First name and last name are required.");
+      return;
+    }
+
+    if (!form.email.trim()) {
+      setError("Email is required.");
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    if (!form.phone.trim()) {
+      setError("Phone is required.");
+      return;
+    }
+
+    try {
+      await updateCustomer.mutateAsync({
+        id: customer.id,
+        data: {
+          first_name: form.first_name.trim(),
+          last_name: form.last_name.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim(),
+        },
+      });
+
+      setOpen(false);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to update customer. Please try again."
+      );
+    }
   }
 
   return (
     <>
-      {/* BUTTON INSIDE COMPONENT */}
-      <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
+      <Button size="sm" variant="outline" onClick={() => handleOpenChange(true)}>
         Update
       </Button>
 
-      {/* MODAL */}
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Update Customer</DialogTitle>
+            <DialogTitle>Update Customer #{customer.id}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
-            <div>
-              <label>Name</label>
+            <div className="space-y-2">
+              <Label htmlFor="update-customer-first-name">First Name</Label>
               <Input
-                value={form.name}
+                id="update-customer-first-name"
+                value={form.first_name}
                 onChange={(e) =>
-                  setForm({ ...form, name: e.target.value })
+                  setForm({ ...form, first_name: e.target.value })
                 }
               />
             </div>
 
-            <div>
-              <label>Email</label>
+            <div className="space-y-2">
+              <Label htmlFor="update-customer-last-name">Last Name</Label>
               <Input
+                id="update-customer-last-name"
+                value={form.last_name}
+                onChange={(e) =>
+                  setForm({ ...form, last_name: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="update-customer-email">Email</Label>
+              <Input
+                id="update-customer-email"
+                type="email"
                 value={form.email}
                 onChange={(e) =>
                   setForm({ ...form, email: e.target.value })
                 }
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="update-customer-phone">Phone</Label>
+              <Input
+                id="update-customer-phone"
+                type="tel"
+                value={form.phone}
+                onChange={(e) =>
+                  setForm({ ...form, phone: e.target.value })
+                }
+              />
+            </div>
+
+            {error && (
+              <p className="text-sm text-red-500">{error}</p>
+            )}
           </div>
 
           <DialogFooter>
@@ -81,7 +153,9 @@ export default function UpdateCustomerDialog({ customer, onUpdate }: Props) {
               Cancel
             </Button>
 
-            <Button onClick={handleSave}>Save</Button>
+            <Button onClick={handleSave} disabled={updateCustomer.isPending}>
+              {updateCustomer.isPending ? "Saving..." : "Save Changes"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
