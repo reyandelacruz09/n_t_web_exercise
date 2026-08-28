@@ -143,7 +143,7 @@ export default function Dashboard() {
                         </span>
                       </td>
                       <td className="py-2 text-right">
-                        ${Number(order.total_amount).toFixed(2)}
+                        ₱{Number(order.total_amount).toFixed(2)}
                       </td>
                     </tr>
                   ))}

@@ -100,3 +100,17 @@ export async function updateOrder(id: number, data: UpdateOrderPayload) {
 
   return response.json();
 }
+
+export async function deleteOrder(id: number) {
+  const response = await apiFetch(`/api/orders/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await getApiErrorMessage(response, "Failed to delete order")
+    );
+  }
+
+  return response.json();
+}

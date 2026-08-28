@@ -154,7 +154,7 @@ export default function Products() {
                         {product.name}
                       </TableCell>
                       <TableCell className="tabular-nums">
-                        ${Number(product.price).toFixed(2)}
+                        ₱{Number(product.price).toFixed(2)}
                       </TableCell>
                       <TableCell className="tabular-nums">
                         {product.stock}

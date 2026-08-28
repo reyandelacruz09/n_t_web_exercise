@@ -52,7 +52,7 @@ export default function OrderItemsEditor({
                 <option value="">Select a product</option>
                 {products.map((product) => (
                   <option key={product.id} value={product.id}>
-                    {product.name} (${Number(product.price).toFixed(2)}) —{" "}
+                    {product.name} (₱{Number(product.price).toFixed(2)}) —{" "}
                     {product.stock} in stock
                   </option>
                 ))}
@@ -72,7 +72,7 @@ export default function OrderItemsEditor({
               />
 
               <span className="w-20 shrink-0 text-right text-sm tabular-nums text-muted-foreground">
-                $
+                ₱
                 {selected && row.quantity
                   ? (Number(selected.price) * Number(row.quantity)).toFixed(2)
                   : "0.00"}
@@ -107,7 +107,7 @@ export default function OrderItemsEditor({
         <p className="text-sm">
           Total:{" "}
           <span className="font-semibold tabular-nums">
-            ${total.toFixed(2)}
+            ₱{total.toFixed(2)}
           </span>
         </p>
       </div>

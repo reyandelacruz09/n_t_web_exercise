@@ -7,6 +7,7 @@ import {
 } from "@/components/data-table";
 import CreateOrderDialog from "@/components/orders/CreateOrderDialog";
 import UpdateOrderDialog from "@/components/orders/UpdateOrderDialog";
+import DeleteOrderDialog from "@/components/orders/DeleteOrderDialog";
 import { useOrders } from "@/hooks/userOrders";
 import { useCustomers } from "@/hooks/useCustomers";
 import type { OrderRow } from "@/services/orders";
@@ -50,7 +51,7 @@ export default function Orders() {
       id: "total",
       header: "Total",
       cellClassName: "tabular-nums",
-      cell: (order) => `$${Number(order.total_amount).toFixed(2)}`,
+      cell: (order) => `₱${Number(order.total_amount).toFixed(2)}`,
     },
     {
       id: "status",
@@ -72,7 +73,12 @@ export default function Orders() {
       header: "Action",
       headerClassName: "text-right",
       cellClassName: "text-right",
-      cell: (order) => <UpdateOrderDialog orderId={order.id} />,
+      cell: (order) => (
+        <div className="flex items-center justify-end gap-2">
+          <UpdateOrderDialog orderId={order.id} />
+          <DeleteOrderDialog orderId={order.id} />
+        </div>
+      ),
     },
   ];
 

@@ -4,7 +4,9 @@ const menuItems = [
   { name: "Dashboard", path: "/" },
   { name: "Orders", path: "/orders" },
   { name: "Products", path: "/products" },
+  { name: "Inventory", path: "/inventory" },
   { name: "Customers", path: "/customers" },
+  { name: "Audit Logs", path: "/audit-logs" },
 ];
 
 export default function Sidebar() {

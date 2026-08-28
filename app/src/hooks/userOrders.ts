@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   createOrder,
+  deleteOrder,
   getOrder,
   getOrders,
   updateOrder,
@@ -56,6 +57,20 @@ export function useUpdateOrder() {
       });
       queryClient.invalidateQueries({
         queryKey: ["orders", variables.id],
+      });
+    },
+  });
+}
+
+export function useDeleteOrder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => deleteOrder(id),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["orders"],
       });
     },
   });

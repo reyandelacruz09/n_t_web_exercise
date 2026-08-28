@@ -5,12 +5,16 @@ export interface Product {
   name: string;
   price: number;
   stock: number;
+  cost_price: number | null;
+  reorder_level: number | null;
 }
 
 export type CreateProductPayload = {
   name: string;
   price: number;
   stock: number;
+  cost_price?: number | null;
+  reorder_level?: number | null;
 };
 
 export async function getProducts(): Promise<Product[]> {
