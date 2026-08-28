@@ -24,8 +24,6 @@ export async function loginUser(
     body: JSON.stringify(payload),
   });
 
-  console.log("Print the response", response)
-
   const data = await response.json();
 
   if (!response.ok) {

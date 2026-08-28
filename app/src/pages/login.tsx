@@ -1,13 +1,15 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { loginUser } from "@/services/auth";
+import useAuth from "@/hooks/useAuth";
 
 function Login() {
   const navigate = useNavigate();
+  const { isAuthenticated, login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,7 +18,6 @@ function Login() {
   const [error, setError] = useState("");
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
-    console.log("Hello there!!!")
     event.preventDefault();
 
     setError("");
@@ -34,12 +35,7 @@ function Login() {
         password,
       });
 
-      console.log("LOGIN RESPONSE:", data);
-      console.log("TOKEN:", data.token);
-      console.log("USER:", data.user);
-
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      login(data.token, data.user);
 
       navigate("/");
     } catch (err) {
@@ -51,6 +47,10 @@ function Login() {
       setLoading(false);
     }
   };
+
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted px-4">
