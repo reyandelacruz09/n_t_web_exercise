@@ -37,7 +37,17 @@ export type UpdateOrderPayload = {
   items?: OrderItemPayload[];
 };
 
-export async function getOrders(): Promise<OrderRow[]> {
+export type OrdersPage = {
+  items: OrderRow[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
+export async function getOrders(): Promise<OrdersPage> {
   const response = await apiFetch("/api/orders");
 
   if (!response.ok) {

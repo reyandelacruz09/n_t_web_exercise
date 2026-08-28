@@ -19,11 +19,13 @@ const statusClassName: Record<string, string> = {
 
 export default function Orders() {
   const {
-    data: orders = [],
+    data,
     isPending,
     error,
   } = useOrders();
   const { data: customers = [] } = useCustomers();
+
+  const orders = data?.items ?? [];
 
   const customerName = (id: number) => {
     const customer = customers.find((c) => c.id === id);
