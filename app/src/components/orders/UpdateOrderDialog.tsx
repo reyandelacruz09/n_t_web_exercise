@@ -3,118 +3,164 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useOrder, useUpdateOrder } from "@/hooks/userOrders";
+import { useProducts } from "@/hooks/useProducts";
+import OrderItemsEditor from "./OrderItemsEditor";
+import type { OrderItemFormRow } from "./orderItemsForm";
+import type { OrderWithItems } from "@/services/orders";
+import type { Product } from "@/services/products";
 
-type Order = {
-  id: number;
-  customer: string;
-  total: number;
-  status: "pending" | "processing" | "completed";
-};
+const ORDER_STATUSES = ["Pending", "Processing", "Completed"];
 
 type Props = {
-  order: Order;
-  onUpdate?: (data: Order) => void;
+  orderId: number;
 };
 
-export default function UpdateOrderDialog({
-  order,
-  onUpdate,
-}: Props) {
+export default function UpdateOrderDialog({ orderId }: Props) {
   const [open, setOpen] = useState(false);
 
-  const [form, setForm] = useState({
-    customer: order.customer,
-    total: order.total,
-    status: order.status,
-  });
+  const { data: products = [] } = useProducts();
+  const { data: order, isPending } = useOrder(open ? orderId : null);
 
-  function handleSave() {
-    const updated: Order = {
-      ...order,
-      ...form,
-    };
+  return (
+    <>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => setOpen(true)}
+      >
+        Update
+      </Button>
 
-    console.log("Updated Order:", updated);
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Order #{orderId}</DialogTitle>
+          </DialogHeader>
 
-    onUpdate?.(updated);
-    setOpen(false);
+          {isPending || !order ? (
+            <p className="py-4 text-sm text-muted-foreground">
+              Loading order...
+            </p>
+          ) : (
+            <UpdateOrderForm
+              order={order}
+              products={products}
+              onSaved={() => setOpen(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+type FormProps = {
+  order: OrderWithItems;
+  products: Product[];
+  onSaved: () => void;
+};
+
+function UpdateOrderForm({ order, products, onSaved }: FormProps) {
+  const [status, setStatus] = useState(order.status);
+  const [items, setItems] = useState<OrderItemFormRow[]>(
+    order.items.map((item) => ({
+      product_id: String(item.product_id),
+      quantity: String(item.quantity),
+    }))
+  );
+  const [error, setError] = useState("");
+
+  const updateOrder = useUpdateOrder();
+
+  async function handleSave() {
+    if (items.length === 0) {
+      setError("An order needs at least one item.");
+      return;
+    }
+
+    for (const row of items) {
+      if (!row.product_id) {
+        setError("Please select a product for every item.");
+        return;
+      }
+
+      if (
+        !row.quantity ||
+        !Number.isInteger(Number(row.quantity)) ||
+        Number(row.quantity) <= 0
+      ) {
+        setError("Quantity must be a whole number greater than zero.");
+        return;
+      }
+    }
+
+    try {
+      await updateOrder.mutateAsync({
+        id: order.id,
+        data: {
+          status,
+          items: items.map((row) => ({
+            product_id: Number(row.product_id),
+            quantity: Number(row.quantity),
+          })),
+        },
+      });
+
+      onSaved();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to update order. Please try again."
+      );
+    }
   }
 
   return (
     <>
-      {/* BUTTON INSIDE COMPONENT */}
-      <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
-        Update
-      </Button>
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor={`order-status-${order.id}`}>Status</Label>
+          <select
+            id={`order-status-${order.id}`}
+            className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+          >
+            {ORDER_STATUSES.map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+        </div>
 
-      {/* MODAL */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Update Order</DialogTitle>
-          </DialogHeader>
+        <OrderItemsEditor
+          products={products}
+          rows={items}
+          onChange={setItems}
+        />
 
-          <div className="space-y-4">
-            {/* Customer */}
-            <div>
-              <label>Customer</label>
-              <Input
-                value={form.customer}
-                onChange={(e) =>
-                  setForm({ ...form, customer: e.target.value })
-                }
-              />
-            </div>
+        {error && (
+          <p className="text-sm text-red-500">{error}</p>
+        )}
+      </div>
 
-            {/* Total */}
-            <div>
-              <label>Total</label>
-              <Input
-                type="number"
-                value={form.total}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    total: Number(e.target.value),
-                  })
-                }
-              />
-            </div>
+      <DialogFooter>
+        <Button variant="outline" onClick={onSaved}>
+          Cancel
+        </Button>
 
-            {/* Status */}
-            <div>
-              <label>Status</label>
-              <select
-                className="w-full border rounded px-3 py-2"
-                value={form.status}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    status: e.target.value as Order["status"],
-                  })
-                }
-              >
-                <option value="pending">Pending</option>
-                <option value="processing">Processing</option>
-                <option value="completed">Completed</option>
-              </select>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-
-            <Button onClick={handleSave}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <Button onClick={handleSave} disabled={updateOrder.isPending}>
+          {updateOrder.isPending ? "Saving..." : "Save Changes"}
+        </Button>
+      </DialogFooter>
     </>
   );
 }

@@ -9,38 +9,31 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useUpdateProduct } from "@/hooks/useProducts";
-import type { Product } from "@/services/products";
+import { useCreateProduct } from "@/hooks/useProducts";
 
-type Props = {
-  product: Product;
+const emptyForm = {
+  name: "",
+  price: "",
+  stock: "",
 };
 
-export default function UpdateProductDialog({ product }: Props) {
+export default function CreateProductDialog() {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
-    name: product.name,
-    price: String(product.price),
-    stock: String(product.stock),
-  });
+  const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
 
-  const updateProduct = useUpdateProduct();
+  const createProduct = useCreateProduct();
 
   function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen);
 
     if (nextOpen) {
-      setForm({
-        name: product.name,
-        price: String(product.price),
-        stock: String(product.stock),
-      });
+      setForm(emptyForm);
       setError("");
     }
   }
 
-  async function handleSave() {
+  async function handleCreate() {
     if (!form.name.trim()) {
       setError("Product name is required.");
       return;
@@ -57,13 +50,10 @@ export default function UpdateProductDialog({ product }: Props) {
     }
 
     try {
-      await updateProduct.mutateAsync({
-        id: product.id,
-        data: {
-          name: form.name.trim(),
-          price: Number(form.price),
-          stock: Number(form.stock),
-        },
+      await createProduct.mutateAsync({
+        name: form.name.trim(),
+        price: Number(form.price),
+        stock: Number(form.stock),
       });
 
       setOpen(false);
@@ -71,29 +61,28 @@ export default function UpdateProductDialog({ product }: Props) {
       setError(
         err instanceof Error
           ? err.message
-          : "Failed to update product. Please try again."
+          : "Failed to create product. Please try again."
       );
     }
   }
 
   return (
     <>
-      <Button size="sm" variant="outline" onClick={() => handleOpenChange(true)}>
-        Update
-      </Button>
+      <Button onClick={() => handleOpenChange(true)}>Add Product</Button>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Update Product #{product.id}</DialogTitle>
+            <DialogTitle>Add Product</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="update-product-name">Name</Label>
+              <Label htmlFor="product-name">Name</Label>
               <Input
-                id="update-product-name"
+                id="product-name"
                 value={form.name}
+                placeholder="Enter product name"
                 onChange={(e) =>
                   setForm({ ...form, name: e.target.value })
                 }
@@ -101,13 +90,14 @@ export default function UpdateProductDialog({ product }: Props) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="update-product-price">Price</Label>
+              <Label htmlFor="product-price">Price</Label>
               <Input
-                id="update-product-price"
+                id="product-price"
                 type="number"
                 min="0"
                 step="0.01"
                 value={form.price}
+                placeholder="0.00"
                 onChange={(e) =>
                   setForm({ ...form, price: e.target.value })
                 }
@@ -115,13 +105,14 @@ export default function UpdateProductDialog({ product }: Props) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="update-product-stock">Stock</Label>
+              <Label htmlFor="product-stock">Stock</Label>
               <Input
-                id="update-product-stock"
+                id="product-stock"
                 type="number"
                 min="0"
                 step="1"
                 value={form.stock}
+                placeholder="0"
                 onChange={(e) =>
                   setForm({ ...form, stock: e.target.value })
                 }
@@ -138,8 +129,8 @@ export default function UpdateProductDialog({ product }: Props) {
               Cancel
             </Button>
 
-            <Button onClick={handleSave} disabled={updateProduct.isPending}>
-              {updateProduct.isPending ? "Saving..." : "Save Changes"}
+            <Button onClick={handleCreate} disabled={createProduct.isPending}>
+              {createProduct.isPending ? "Creating..." : "Create Product"}
             </Button>
           </DialogFooter>
         </DialogContent>
