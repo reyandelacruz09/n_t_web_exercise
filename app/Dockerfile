@@ -17,8 +17,6 @@ FROM nginx:1.27-alpine
 # Copy the built static assets
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Custom nginx config (SPA fallback + API proxy).
-# The official nginx image auto-substitutes $API_HOST at startup via envsubst.
 COPY nginx.template.conf /etc/nginx/templates/default.conf.template
 
 EXPOSE 80

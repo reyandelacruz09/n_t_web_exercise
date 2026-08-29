@@ -8,17 +8,61 @@ import {
   Package,
   ShieldAlert,
   ShoppingCart,
+  UserCog,
   UserRound,
   Users,
 } from "lucide-react";
+import useAuth from "@/hooks/useAuth";
+import { PERMISSIONS, hasPermission } from "@/lib/permissions";
 
-const menuItems = [
-  { name: "Dashboard", path: "/", icon: LayoutDashboard },
-  { name: "Orders", path: "/orders", icon: ShoppingCart },
-  { name: "Products", path: "/products", icon: Package },
-  { name: "Inventory", path: "/inventory", icon: Boxes },
-  { name: "Customers", path: "/customers", icon: Users },
-  { name: "Audit Logs", path: "/audit-logs", icon: ShieldAlert },
+const menuItems: {
+  name: string;
+  path: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  permission?: string;
+}[] = [
+  {
+    name: "Dashboard",
+    path: "/",
+    icon: LayoutDashboard,
+    permission: PERMISSIONS.dashboard.view,
+  },
+  {
+    name: "Orders",
+    path: "/orders",
+    icon: ShoppingCart,
+    permission: PERMISSIONS.orders.view,
+  },
+  {
+    name: "Products",
+    path: "/products",
+    icon: Package,
+    permission: PERMISSIONS.products.view,
+  },
+  {
+    name: "Inventory",
+    path: "/inventory",
+    icon: Boxes,
+    permission: PERMISSIONS.inventory.view,
+  },
+  {
+    name: "Customers",
+    path: "/customers",
+    icon: Users,
+    permission: PERMISSIONS.customers.view,
+  },
+  {
+    name: "Audit Logs",
+    path: "/audit-logs",
+    icon: ShieldAlert,
+    permission: PERMISSIONS.audit.view,
+  },
+  {
+    name: "User Management",
+    path: "/users",
+    icon: UserCog,
+    permission: PERMISSIONS.users.manage,
+  },
   { name: "Profile", path: "/profile", icon: UserRound },
 ];
 
@@ -33,8 +77,13 @@ function getInitialCollapsed(): boolean {
 }
 
 export default function Sidebar() {
+  const { user } = useAuth();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(getInitialCollapsed);
+
+  const visibleItems = menuItems.filter(
+    (item) => !item.permission || hasPermission(user, item.permission)
+  );
 
   function toggle() {
     setCollapsed((prev) => {
@@ -77,7 +126,7 @@ export default function Sidebar() {
 
       <nav className="flex-1 p-4">
         <ul className="space-y-2">
-          {menuItems.map((item) => {
+          {visibleItems.map((item) => {
             const Icon = item.icon;
             const active = location.pathname === item.path;
 
