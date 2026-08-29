@@ -11,8 +11,12 @@ import Products from "../pages/Products";
 import Customers from "../pages/Customers";
 import Inventory from "../pages/Inventory";
 import AuditLogs from "../pages/AuditLogs";
+import Profile from "../pages/Profile";
+import UserManagement from "../pages/UserManagement";
 import Login from "../pages/login";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import PermissionRoute from "@/components/auth/PermissionRoute";
+import { PERMISSIONS } from "@/lib/permissions";
 
 
 export default function AppRoutes() {
@@ -28,6 +32,10 @@ export default function AppRoutes() {
             <Route path="/customers" element={<Customers />} />
             <Route path="/inventory" element={<Inventory />} />
             <Route path="/audit-logs" element={<AuditLogs />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route element={<PermissionRoute permission={PERMISSIONS.users.manage} />}>
+              <Route path="/users" element={<UserManagement />} />
+            </Route>
           </Route>
         </Route>
       </Routes>

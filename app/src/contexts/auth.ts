@@ -1,14 +1,13 @@
 import { createContext } from "react";
 
-import type { LoginResponse } from "@/services/auth";
-
-export type User = LoginResponse["user"];
+import type { User } from "@/services/auth";
 
 export type AuthContextValue = {
-  token: string | null;
   user: User | null;
   isAuthenticated: boolean;
-  login: (token: string, user: User) => void;
+  ready: boolean;
+  login: (user: User) => void;
+  updateUser: (user: User) => void;
   logout: () => void;
 };
 

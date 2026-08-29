@@ -1,38 +1,53 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { AuthContext, type AuthContextValue } from "./auth";
-
-function getStoredAuth(): { token: string | null; user: import("./auth").User | null } {
-  try {
-    const token = localStorage.getItem("token");
-    const raw = localStorage.getItem("user");
-    const user = raw ? JSON.parse(raw) : null;
-    return { token, user };
-  } catch {
-    return { token: null, user: null };
-  }
-}
+import { getMe, logoutUser, type User } from "@/services/auth";
 
 export default function AuthProvider({ children }: { children: ReactNode }) {
-  const [stored, setStored] = useState(getStoredAuth);
+  const [user, setUser] = useState<User | null>(null);
+  const [ready, setReady] = useState(false);
 
-  function login(token: string, user: import("./auth").User) {
-    localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(user));
-    setStored({ token, user });
+  useEffect(() => {
+    let active = true;
+
+    getMe()
+      .then((current) => {
+        if (active) setUser(current);
+      })
+      .catch(() => {
+        if (active) setUser(null);
+      })
+      .finally(() => {
+        if (active) setReady(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  function login(current: User) {
+    setUser(current);
   }
 
-  function logout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setStored({ token: null, user: null });
+  function updateUser(current: User) {
+    setUser(current);
+  }
+
+  async function logout() {
+    try {
+      await logoutUser();
+    } finally {
+      setUser(null);
+    }
   }
 
   const value: AuthContextValue = {
-    token: stored.token,
-    user: stored.user,
-    isAuthenticated: !!stored.token,
+    user,
+    isAuthenticated: !!user,
+    ready,
     login,
+    updateUser,
     logout,
   };
 

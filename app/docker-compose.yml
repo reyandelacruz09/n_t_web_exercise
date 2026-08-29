@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  web:
+    build: .
+    container_name: web_app
+    image: n_t_web_exercise-web:latest
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      # Hostname of the backend API container, used by nginx envsubst.
+      # Must be on the same Docker network as the API.
+      API_HOST: ${API_HOST:-node_api}
+    networks:
+      - backend
+
+networks:
+  # Join the existing backend compose network so nginx can reach node_api:3000.
+  backend:
+    external: true
+    name: n_exercise_api_default
