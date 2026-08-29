@@ -35,7 +35,7 @@ function Login() {
         password,
       });
 
-      login(data.token, data.user);
+      login(data.user);
 
       navigate("/");
     } catch (err) {

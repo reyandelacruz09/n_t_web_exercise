@@ -11,6 +11,7 @@ import Products from "../pages/Products";
 import Customers from "../pages/Customers";
 import Inventory from "../pages/Inventory";
 import AuditLogs from "../pages/AuditLogs";
+import Profile from "../pages/Profile";
 import Login from "../pages/login";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
@@ -28,6 +29,7 @@ export default function AppRoutes() {
             <Route path="/customers" element={<Customers />} />
             <Route path="/inventory" element={<Inventory />} />
             <Route path="/audit-logs" element={<AuditLogs />} />
+            <Route path="/profile" element={<Profile />} />
           </Route>
         </Route>
       </Routes>
